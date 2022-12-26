@@ -87,7 +87,7 @@ func ExportDirSetup(g_channelID string) *os.File {
 			log.Fatal(err)
 		}
 	}
-	var exportFileName string = fmt.Sprintf("%s-%s.json", g_channelID, time.Now().Format("2006-01-02_15.04.05"))
+	var exportFileName string = fmt.Sprintf("%s-%v.json", g_channelID, time.Now().Unix())
 	var exportPath string = fmt.Sprintf("./message-exports/%s", exportFileName)
 	exportFile, err := os.OpenFile(exportPath, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0644)
 	if err != nil {
