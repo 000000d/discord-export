@@ -1,5 +1,9 @@
 # discord-export
 
+very simple cli to extract all messages sent in any Discord server's ***text*** channel.
+
+** due to Discord's own limitations, source URL to files/attachments/images/videos in the message cannot be extracted. text messages with markdown or embed will have strange formatting.
+
 ### usage: 
 
 > discord-export <CHANNEL_ID>
@@ -29,15 +33,15 @@ directory where the json formatted exported messages will be placed inside.
         {
             "message": "hello",
             "user_id": "456",
-            "user": "USER#0000"
+            "user": "USER1"
         },
         {
             "message": "hello1",
             "user_id": "789",
-            "user": "USER1#0000"
+            "user": "USER2"
         }
     ]
 }
 ```
 
-should be very easy to work with. the array contains messages sent latest-oldest when looping top-bottom.
+this JSON format should be very easy to work with. the array contains messages sent latest-oldest when looping top-bottom.

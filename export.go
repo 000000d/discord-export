@@ -16,9 +16,8 @@ type MessageBlock struct {
 	Content   string `json:"content,omitempty"`
 	ChannelID string `json:"channel_id,omitempty"`
 	Author    struct {
-		ID            string `json:"id"`
-		Username      string `json:"username"`
-		Discriminator string `json:"discriminator"`
+		ID       string `json:"id"`
+		Username string `json:"username"`
 	} `json:"author"`
 }
 
@@ -32,7 +31,7 @@ type ExportedContent struct {
 }
 
 const g_AUTH_FILE_NAME string = "auth.txt"
-const g_API_VERSION string = "v9"
+const g_API_VERSION string = "v10"
 const g_API_LIMIT uint8 = 100
 const g_SLEEP_TIME time.Duration = 500
 
@@ -87,7 +86,7 @@ func ExportDirSetup(g_channelID string) *os.File {
 			log.Fatal(err)
 		}
 	}
-	var exportFileName string = fmt.Sprintf("%s-%v.json", g_channelID, time.Now().Unix())
+	var exportFileName string = fmt.Sprintf("%s_%v.json", g_channelID, time.Now().Format("2006-01-02_15.04.05"))
 	var exportPath string = fmt.Sprintf("./message-exports/%s", exportFileName)
 	exportFile, err := os.OpenFile(exportPath, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0644)
 	if err != nil {
@@ -137,7 +136,7 @@ func Call(APIUrl, auth string, exportFile *os.File, exported ExportedContent) {
 		}{
 			Content: message.Content,
 			UserID:  message.Author.ID,
-			User:    message.Author.Username + "#" + message.Author.Discriminator,
+			User:    message.Author.Username,
 		})
 	}
 
