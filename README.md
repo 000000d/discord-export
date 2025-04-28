@@ -1,32 +1,36 @@
 # discord-export
 
-very simple cli to extract all messages sent in any Discord server's ***text*** channel.
+A very simple CLI to extract all messages sent in any Discord server's ***text*** channel.
 
-** due to Discord's own limitations, source URL to files/attachments/images/videos in the message cannot be extracted. text messages with markdown or embed will have strange formatting.
+> [!WARNING]
+> Due to Discord's own limitations, source URL to files/attachments/images/videos in the message cannot be extracted.
+> Text messages with markdown or embed will have strange formatting.
 
-### usage: 
+### Usage:
 
-> discord-export <CHANNEL_ID>
+```console
+discord-export <CHANNEL_ID>
+```
 
-### requirements: 
+### Requirements:
 
 > auth.txt
 
-paste valid discord token inside `auth.txt` file before running. `auth.txt` file should ONLY include the token, nothing else. no extra characters, no newlines, etc.
+Paste valid discord token inside `auth.txt` file before running. `auth.txt` file should ONLY include the token, nothing else. no extra characters, no newlines, etc.
 
-### output:
+### Output:
 
 > logs/
 
-directory where any runtime errors will be placed inside.
+Directory where any runtime errors will be put into.
 
 > message-exports/
 
-directory where the json formatted exported messages will be placed inside.
+Directory where the JSON formatted exported messages will be put into.
 
-### exported json format:
+### Exported JSON format:
 
-```
+```json
 {
     "channel_id": "123",
     "messages": [
@@ -44,4 +48,4 @@ directory where the json formatted exported messages will be placed inside.
 }
 ```
 
-this JSON format should be very easy to work with. the array contains messages sent latest-oldest when looping top-bottom.
+This JSON format should be very easy to work with. The array contains messages sent latest-oldest when looping top-bottom.
