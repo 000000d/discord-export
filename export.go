@@ -37,33 +37,6 @@ const g_SLEEP_TIME time.Duration = 500
 
 var g_channelID string = "0"
 
-func main() {
-	LogSetup()
-
-	if len(os.Args) < 2 {
-		log.Fatal("pass channel id as cli arg.")
-	}
-
-	readAuthFile, err := os.ReadFile(g_AUTH_FILE_NAME)
-	if err != nil || string(readAuthFile) == "" {
-		os.Create(g_AUTH_FILE_NAME)
-		log.Printf("paste discord token inside '%s'.", g_AUTH_FILE_NAME)
-		os.Exit(-1)
-	}
-
-	// var auth string = strings.Trim(string(readAuthFile), "\n")
-	var auth string = string(readAuthFile)
-	g_channelID = os.Args[1]
-	var baseAPIUrl string = fmt.Sprintf("https://discord.com/api/%s/channels/%s/messages?limit=%d", g_API_VERSION, g_channelID, g_API_LIMIT)
-
-	var exported ExportedContent
-	exported.ChannelID = g_channelID
-	var exportFile *os.File = ExportDirSetup(g_channelID)
-
-	log.Printf("started on channel: '%s', api version: '%s', limit: '%d'", g_channelID, g_API_VERSION, g_API_LIMIT)
-	Call(baseAPIUrl, auth, exportFile, exported)
-}
-
 func LogSetup() {
 	log.SetFlags(log.Lmicroseconds | log.Lshortfile)
 	if _, err := os.Stat("./logs"); errors.Is(err, os.ErrNotExist) {
@@ -157,4 +130,33 @@ func Call(APIUrl, auth string, exportFile *os.File, exported ExportedContent) {
 
 	time.Sleep(g_SLEEP_TIME * time.Millisecond)
 	Call(beforeParamAPIUrl, auth, exportFile, exported)
+}
+
+func main() {
+	LogSetup()
+
+	if len(os.Args) < 2 {
+		log.Fatal("pass channel id as cli arg.")
+	} else if len(os.Args) > 2 {
+		log.Fatal("Current limited to exporting one channel at a time.")
+	}
+
+	readAuthFile, err := os.ReadFile(g_AUTH_FILE_NAME)
+	if err != nil || string(readAuthFile) == "" {
+		os.Create(g_AUTH_FILE_NAME)
+		log.Printf("paste discord token inside '%s'.", g_AUTH_FILE_NAME)
+		os.Exit(-1)
+	}
+
+	// var auth string = strings.Trim(string(readAuthFile), "\n")
+	var auth string = string(readAuthFile)
+	g_channelID = os.Args[1]
+	var baseAPIUrl string = fmt.Sprintf("https://discord.com/api/%s/channels/%s/messages?limit=%d", g_API_VERSION, g_channelID, g_API_LIMIT)
+
+	var exported ExportedContent
+	exported.ChannelID = g_channelID
+	var exportFile *os.File = ExportDirSetup(g_channelID)
+
+	log.Printf("started on channel: '%s', api version: '%s', limit: '%d'", g_channelID, g_API_VERSION, g_API_LIMIT)
+	Call(baseAPIUrl, auth, exportFile, exported)
 }
