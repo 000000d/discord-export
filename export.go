@@ -13,22 +13,25 @@ import (
 )
 
 type MessageBlock struct {
-    ID        string `json:"id,omitempty"`
-    Content   string `json:"content,omitempty"`
-    ChannelID string `json:"channel_id,omitempty"`
+    ID        string "json:\"id,omitempty\""
+    Content   string "json:\"content,omitempty\""
+    ChannelID string "json:\"channel_id,omitempty\""
     Author    struct {
-        ID       string `json:"id"`
-        Username string `json:"username"`
-    } `json:"author"`
+        ID       string "json:\"id,omitempty\""
+        Username string "json:\"username,omitempty\""
+        Bot      bool   "json:\"bot\""
+    } "json:\"author,omitempty\""
 }
 
 type ExportedContent struct {
-    ChannelID string `json:"channel_id"`
+    ChannelID string "json:\"channel_id,omitempty\""
     Messages  []struct {
-        Content string `json:"message"`
-        UserID  string `json:"user_id"`
-        User    string `json:"user"`
-    } `json:"messages"`
+        MessageID string "json:\"message_id,omitempty\""
+        Content   string "json:\"message,omitempty\""
+        UserID    string "json:\"user_id,omitempty\""
+        User      string "json:\"user,omitempty\""
+        Bot       bool   "json:\"bot\""
+    } "json:\"messages,omitempty\""
 }
 
 const AUTH_FILE_NAME string = "auth.txt"
@@ -51,21 +54,21 @@ func exportDirSetup(channelID string) *os.File {
     exportPath := fmt.Sprintf("./%s/%s", exportDirectory, exportFileName)
     exportFile, err := os.OpenFile(exportPath, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666)
     if err != nil {
-        log.Fatalf("Error creating export file '%s'. ERROR: %v\n", exportFile,  err)
+        log.Fatalf("Error creating export file '%s'. ERROR: %v\n", exportFile.Name(), err)
     }
     defer exportFile.Close()
 
     return exportFile
 }
 
-func apiCall(baseAPI, auth string, exportFile *os.File, exported ExportedContent) {
+func apiCall(messagesAPI, auth string, exportFile *os.File, exported ExportedContent) {
     prevMessageID := "0"
     client := &http.Client{
         Timeout: 5 * time.Second,
     }
     var msgJSONList []MessageBlock
 
-    req, err := http.NewRequest("GET", baseAPI, nil)
+    req, err := http.NewRequest(http.MethodGet, messagesAPI, nil)
     if err != nil {
         log.Fatalln("Error creating new HTTP request. ERROR:", err)
     }
@@ -84,19 +87,25 @@ func apiCall(baseAPI, auth string, exportFile *os.File, exported ExportedContent
 
     err = json.Unmarshal(resBody, &msgJSONList)
     if err != nil {
-        log.Fatalf("Incorrect auth token. Received: '%s'\n", auth)
+        log.Println("Error with JSON unmarshal. ERROR:", err)
+        log.Println("Possibly invalid auth token or channel ID. Skipping channel:", channelID)
+        return
     }
 
     for _, message := range msgJSONList {
         prevMessageID = message.ID
         exported.Messages = append(exported.Messages, struct {
-            Content string `json:"message"`
-            UserID  string `json:"user_id"`
-            User    string `json:"user"`
+            MessageID string "json:\"message_id,omitempty\""
+            Content   string "json:\"message,omitempty\""
+            UserID    string "json:\"user_id,omitempty\""
+            User      string "json:\"user,omitempty\""
+            Bot       bool   "json:\"bot\""
         }{
-            Content: message.Content,
-            UserID:  message.Author.ID,
-            User:    message.Author.Username,
+            MessageID: message.ID,
+            Content:   message.Content,
+            UserID:    message.Author.ID,
+            User:      message.Author.Username,
+            Bot:       message.Author.Bot,
         })
     }
 
@@ -107,10 +116,10 @@ func apiCall(baseAPI, auth string, exportFile *os.File, exported ExportedContent
         }
         err = os.WriteFile(exportFile.Name(), export, os.ModePerm)
         if err != nil {
-            log.Fatalf("Error writing exported messages to file '%s'. ERROR: %v\n", exportFile.Name(),  err)
+            log.Fatalf("Error writing exported messages to file '%s'. ERROR: %v\n", exportFile.Name(), err)
         }
-        log.Println("Finished")
-        os.Exit(0)
+        log.Println("Finished on channel:", channelID)
+        return
     }
 
     beforeParamAPI := fmt.Sprintf("https://discord.com/api/%s/channels/%s/messages?limit=%d&before=%s", API_VERSION, channelID, API_LIMIT, prevMessageID)
@@ -119,11 +128,20 @@ func apiCall(baseAPI, auth string, exportFile *os.File, exported ExportedContent
     apiCall(beforeParamAPI, auth, exportFile, exported)
 }
 
+func shift(args *[]string) string {
+    arg := (*args)[0]
+    (*args) = (*args)[1:]
+    return arg
+}
+
 func main() {
-    if len(os.Args) < 2 {
-        fmt.Fprintf(os.Stderr, "Usage: %s <channel_id> ...\n", os.Args[0])
+    args := os.Args
+    programName := shift(&args)
+
+    if len(args) == 0 {
+        fmt.Fprintf(os.Stderr, "Usage: %s <CHANNEL_ID> ...\n", programName)
         fmt.Fprintf(os.Stderr, "ERROR: Include channel ID as CLI arg\n")
-        os.Exit(1);
+        os.Exit(1)
     }
 
     readAuthFile, err := os.ReadFile(AUTH_FILE_NAME)
@@ -134,13 +152,16 @@ func main() {
     }
 
     auth := strings.Trim(string(readAuthFile), "\n")
-    channelID = os.Args[1]
-    baseAPI := fmt.Sprintf("https://discord.com/api/%s/channels/%s/messages?limit=%d", API_VERSION, channelID, API_LIMIT)
 
-    var exported ExportedContent
-    exported.ChannelID = channelID
-    exportFile := exportDirSetup(channelID)
+    for len(args) != 0 {
+        channelID = shift(&args)
+        baseAPI := fmt.Sprintf("https://discord.com/api/%s/channels/%s/messages?limit=%d", API_VERSION, channelID, API_LIMIT)
 
-    log.Printf("Started on channel: '%s', API version: '%s', limit: '%d'", channelID, API_VERSION, API_LIMIT)
-    apiCall(baseAPI, auth, exportFile, exported)
+        var exported ExportedContent
+        exported.ChannelID = channelID
+        exportFile := exportDirSetup(channelID)
+
+        log.Printf("Started on channel: '%s', API version: '%s', limit: '%d'", channelID, API_VERSION, API_LIMIT)
+        apiCall(baseAPI, auth, exportFile, exported)
+    }
 }
